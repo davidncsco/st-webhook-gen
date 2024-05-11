@@ -138,7 +138,7 @@ if __name__ == "__main__":
             st.session_state.generated_state = False
         if generate_button or st.session_state.generated_state:
             characters = get_unused_webhook(my_webhooks)
-            st.markdown(f"You selected: \"**{selected_room}**\" room, suffix generated: \":red[**{characters}**]\"")ew
+            st.markdown(f"You selected: \"**{selected_room}**\" room, suffix generated: \":red[**{characters}**]\"")
             st.write(f"Room ID = {rooms[selected_room]}")
             st.write("Click on button to register your webhook")
             confirm_button = st.button("Register", on_click=register_webhook, args=(rooms[selected_room],characters,template))

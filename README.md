@@ -1,2 +1,2 @@
 # st-webhook-gen
-Generate webhook suffix for Common Room to Webex Room notification
+Generate webhook suffices for Common Room to Webex Room notification

@@ -106,7 +106,6 @@ if __name__ == "__main__":
     access_token = st.sidebar.text_input("Webex Access Token", os.getenv("WEBEX_ACCESS_TOKEN"))
     # Read webhooks server URL from secrets
     webhook_server_url = st.secrets["webhook_server_url"]
-
     col1, col2 = st.columns([1,2])
     col1.image('webhooks.jpg', caption='Webhooks Generator for Webex Rooms',width=220)
     
@@ -128,6 +127,7 @@ if __name__ == "__main__":
     df = pd.DataFrame(my_webhooks)
     df = df.rename(columns={'title': 'Room Title', 'hook': 'Hook Name'})
     col2.dataframe(df, hide_index=True)
+    col2.write(f"Webhook payload URL -> {webhook_server_url}process/<Hook Name>")
     template = st.radio('Select a message template for this Webex room',
                         [1, 2, 3])
     selected_room = st.selectbox("Please select a Webex room from list:", rooms_without_webhooks(rooms,my_webhooks))

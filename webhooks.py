@@ -1,7 +1,6 @@
 import streamlit as st
 import requests
-from requests import HTTPError
-import os, time, random, copy
+import os, random, copy
 import pandas as pd
 
 access_token = None
@@ -9,7 +8,7 @@ WEBEX_API_PREFIX = 'https://webexapis.com'
 
 @st.cache_data
 def fetch_all_rooms():
-    """  Returns list of teams to which the authenticated user belongs and is moderator
+    """  Returns list of Webex teams/space to which the authenticated user belongs
     """
     url = WEBEX_API_PREFIX + "/v1/rooms"
     
@@ -47,13 +46,36 @@ def get_unused_webhook(webhooks):
     return characters
 
 def fetch_webhooks(rooms):
+    global webhook_url
     # Fetch all webhooks from DB
-    
-    response = requests.get(webhook_server_url)
+    print(f"fetch_webhooks: {webhook_url}")
+    response = requests.get(webhook_url)
     if response.status_code != 200:
         print("Error fetching webhooks from DB")
         return None
     return response.json()
+
+@st.cache_data
+def fetch_templates():
+    global templates_url
+    # Fetch all templates from DB
+    response = requests.get(templates_url)
+    if response.status_code != 200:
+        print("Error fetching templates from DB")
+        return None
+    return response.json()
+
+def get_template_names(templates):
+    return [template["name"] for template in templates]
+
+def get_template_index(templates, name):
+    """
+    Returns the template id of the matching template name
+    """
+    for template in templates:
+        if template["name"] == name:
+            return template["id"]
+    return 1
 
 def fetch_my_webhooks(rooms, webhooks):
     my_webhooks = []
@@ -73,7 +95,8 @@ def rooms_without_webhooks(rooms,webhooks):
     
 def add_bot_to_room( room_id ):
     # Add bot membership to room so bot can send message to room when processing webhooks
-    bot_email = st.secrets["bot_email"]
+    #bot_email = os.getenv("WEBEX_BOT_EMAIL","commonroom@webex.bot")
+    bot_email = st.secrets["webex_bot_email"]
     # Build the request URL
     url = WEBEX_API_PREFIX + "/v1/memberships"
 
@@ -86,11 +109,13 @@ def add_bot_to_room( room_id ):
 
     
 def register_webhook(roomId, name, template):
+    global webhook_url
+
     webhook_data = { 
                 "roomId" : roomId,
                 "name": name,
                 "template": template }
-    response = requests.post(webhook_server_url, json=webhook_data)
+    response = requests.post(webhook_url, json=webhook_data)
     if response.status_code != 200:
         st.error(f"Error creating webhooks, status code = {response.status_code}")
         return None
@@ -105,7 +130,11 @@ if __name__ == "__main__":
     # Input token variable either from sidebar or environment variable
     access_token = st.sidebar.text_input("Webex Access Token", os.getenv("WEBEX_ACCESS_TOKEN"))
     # Read webhooks server URL from secrets
-    webhook_server_url = st.secrets["webhook_server_url"]
+    #webservices_url = os.getenv("WEBSERVICES_SERVER_URL", "http://localhost:8000")
+    webservices_url = st.secrets["webservices_server_url"]
+    webhook_url     = webservices_url + "/webhooks/"
+    templates_url   = webservices_url + "/templates/"
+    
     col1, col2 = st.columns([1,2])
     col1.image('webhooks.jpg', caption='Webhooks Generator for Webex Rooms',width=220)
     
@@ -126,12 +155,13 @@ if __name__ == "__main__":
     my_webhooks = fetch_my_webhooks(rooms,webhooks)
     df = pd.DataFrame(my_webhooks)
     df = df.rename(columns={'title': 'Room Title', 'hook': 'Hook Name'})
-    col2.dataframe(df, hide_index=True)
-    col2.write(f"Webhook payload URL -> {webhook_server_url}process/<Hook Name>")
-    template = st.radio('Select a message template for this Webex room',
-                        [1, 2, 3])
+    col2.dataframe(df, hide_index=True, height=250, width=450)
+    st.write(f"Payload URL -> {webhook_url}process/<Hook Name>")
     selected_room = st.selectbox("Please select a Webex room from list:", rooms_without_webhooks(rooms,my_webhooks))
     if selected_room:
+        templates = fetch_templates()
+        template_names = get_template_names(templates)
+        selected_template = st.selectbox("Please select a message template for this room",template_names)
         st.write("Press button to generate a random string as suffix for webhook payload URL")
         generate_button = st.button("Generate")
         if "generated_state" not in st.session_state:
@@ -141,7 +171,7 @@ if __name__ == "__main__":
             st.markdown(f"You selected: \"**{selected_room}**\" room, suffix generated: \":red[**{characters}**]\"")
             st.write(f"Room ID = {rooms[selected_room]}")
             st.write("Click on button to register your webhook")
-            confirm_button = st.button("Register", on_click=register_webhook, args=(rooms[selected_room],characters,template))
+            confirm_button = st.button("Register", on_click=register_webhook, args=(rooms[selected_room],characters,get_template_index(templates,selected_template)))
         else:
             st.write("Please select a room then click generate.")
 

@@ -48,7 +48,7 @@ def get_unused_webhook(webhooks):
 def fetch_webhooks(rooms):
     global webhook_url
     # Fetch all webhooks from DB
-    print(f"fetch_webhooks: {webhook_url}")
+    #print(f"fetch_webhooks: {webhook_url}")
     response = requests.get(webhook_url)
     if response.status_code != 200:
         print("Error fetching webhooks from DB")
@@ -95,7 +95,6 @@ def rooms_without_webhooks(rooms,webhooks):
     
 def add_bot_to_room( room_id ):
     # Add bot membership to room so bot can send message to room when processing webhooks
-    #bot_email = os.getenv("WEBEX_BOT_EMAIL","commonroom@webex.bot")
     bot_email = st.secrets["webex_bot_email"]
     # Build the request URL
     url = WEBEX_API_PREFIX + "/v1/memberships"
@@ -119,7 +118,7 @@ def register_webhook(roomId, name, template):
     if response.status_code != 200:
         st.error(f"Error creating webhooks, status code = {response.status_code}")
         return None
-    # Add DevNet Community bot for Webhook to the room (commonroom@webex.bot)
+    # Add DevNet Community bot for Webhook to the room
     add_bot_to_room(roomId)
     st.success("Webhook registered")
     return response.json()
@@ -130,7 +129,6 @@ if __name__ == "__main__":
     # Input token variable either from sidebar or environment variable
     access_token = st.sidebar.text_input("Webex Access Token", os.getenv("WEBEX_ACCESS_TOKEN"))
     # Read webhooks server URL from secrets
-    #webservices_url = os.getenv("WEBSERVICES_SERVER_URL", "http://localhost:8000")
     webservices_url = st.secrets["webservices_server_url"]
     webhook_url     = webservices_url + "/webhooks/"
     templates_url   = webservices_url + "/templates/"

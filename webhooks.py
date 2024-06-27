@@ -38,10 +38,27 @@ def get_random_star_wars_character():
     random_character = random.choice(characters).get("name","unknown").lower().replace(' ','_')
     return random_character
 
+def get_random_pokemon_name():
+    # Get the total number of Pokémon
+    response = requests.get('https://pokeapi.co/api/v2/pokemon-species/')
+    data = response.json()
+    total_pokemon = data['count']
+
+    # Choose a random Pokémon ID
+    random_id = random.randint(1, total_pokemon)
+
+    # Fetch the Pokémon data
+    response = requests.get(f'https://pokeapi.co/api/v2/pokemon-species/{random_id}/')
+    pokemon_data = response.json()
+
+    # Get the Pokémon name
+    pokemon_name = pokemon_data['name']
+    return pokemon_name.replace(" ", "_")
+
 def get_unused_webhook(webhooks):
     match_found = True
     while match_found:
-        characters = get_random_star_wars_character()
+        characters = get_random_pokemon_name()
         match_found = any(webhook["hook"] == characters for webhook in webhooks)
     return characters
 
